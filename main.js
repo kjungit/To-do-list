@@ -3,9 +3,62 @@
     return document.querySelector(target);
   };
   const API_URL = `http://localhost:3000/todos`;
-  const $todo_list = get(".todo_list");
+  const $todoList = get(".todo_list");
   const $form = get(".todo_form");
+  const $pagination = get(".pagination");
   const $todoInput = get(".todo_input");
+
+  const limit = 5;
+  let currentPage = 1;
+  const pageCount = 5;
+  let totalCount = 53;
+
+  const pagination = () => {
+    let totalPage = Math.ceil(totalCount / limit);
+    let pageGroup = Math.ceil(currentPage / pageCount);
+    let lastNum = pageGroup * pageCount;
+    if (lastNum > totalPage) {
+      lastNum = totalPage;
+    }
+    // 첫번째 숫자는 마지막 숫자에서 전체 카운트 - 1
+    let firstNum = lastNum - (pageCount - 1);
+
+    const next = lastNum + 1;
+    const prev = firstNum - 1;
+
+    let html = "";
+    if (prev > 0) {
+      html += "<button class='prev' data-fn='prev'>이전</button> ";
+    }
+
+    for (let i = firstNum; i <= lastNum; i += 1) {
+      html += `<button class="pageNumber" id="page_${i}">${i}</button>`;
+    }
+
+    if (lastNum < totalPage) {
+      html += `<button class='next' data-fn='next'>다음</button>`;
+    }
+
+    $pagination.innerHTML = html;
+
+    const $currentPageNum = get(`.pageNumber#page_${currentPage}`);
+    $currentPageNum.style.color = "#9dc0e8";
+
+    const $currentPageNums = document.querySelectorAll(".pagination button");
+    $currentPageNums.forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.fn === "prev") {
+          currentPage = prev;
+        } else if (button.dataset.fn === "next") {
+          currentPage = next;
+        } else {
+          currentPage = button.innerText;
+        }
+        pagination();
+        getTodos();
+      });
+    });
+  };
 
   const createTodoElement = (item) => {
     const { id, content, completed } = item;
@@ -44,15 +97,15 @@
   };
   // todos item 넣기
   const renderAllTodos = (todos) => {
-    $todo_list.innerHTML = "";
+    $todoList.innerHTML = "";
     todos.forEach((item) => {
       const todosEl = createTodoElement(item);
-      $todo_list.appendChild(todosEl);
+      $todoList.appendChild(todosEl);
     });
   };
   // json-server에서 db데이터 가져오기
   const getTodos = () => {
-    fetch(API_URL)
+    fetch(`${API_URL}?_page=${currentPage}&_limit=${limit}`)
       .then((response) => response.json())
       .then((todos) => {
         renderAllTodos(todos);
@@ -166,13 +219,14 @@
     // html이 전부 실행되었을 때
     window.addEventListener("DOMContentLoaded", () => {
       getTodos();
+      pagination();
     });
 
     $form.addEventListener("submit", addTodo);
-    $todo_list.addEventListener("click", toggleTodo);
-    $todo_list.addEventListener("click", changeEditMode);
-    $todo_list.addEventListener("click", editTodo);
-    $todo_list.addEventListener("click", removeTodo);
+    $todoList.addEventListener("click", toggleTodo);
+    $todoList.addEventListener("click", changeEditMode);
+    $todoList.addEventListener("click", editTodo);
+    $todoList.addEventListener("click", removeTodo);
   };
   init();
 })();
